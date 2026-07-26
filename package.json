@@ -1,0 +1,43 @@
+{
+  "name": "tokobox-erp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.13",
+    "@radix-ui/react-slot": "^1.3.1",
+    "@radix-ui/react-switch": "^1.3.5",
+    "@supabase/supabase-js": "^2.110.8",
+    "next": "16.2.11",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.11",
+    "jsdom": "^29.1.1",
+    "lucide-react": "^1.25.0",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5",
+    "vitest": "^4.1.10"
+  }
+}

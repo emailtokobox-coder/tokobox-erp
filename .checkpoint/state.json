@@ -1,0 +1,79 @@
+{
+  "phase": "Phase 9: Persiapan Deploy ke Vercel",
+  "iteration": "Iter 49: Deploy Prep — Tailwind Shim, .env.example, vercel.json, RLS Policies, Build Verification",
+  "status": "complete",
+  "progress_pct": 100,
+  "completed_scope": [
+    "Created tailwind.config.ts shim for shadcn/ui compatibility (baseColor: slate, cssVariables: true)",
+    "Created .env.example template with all required env var keys (no real values)",
+    "Created vercel.json with region sin1, 60s maxDuration, and security headers",
+    "Created supabase/migrations/001_rls_policies.sql with RLS policies for all 21 tables (stores + 20 data tables)",
+    "Created scripts/migrate.ts for applying migrations from CLI",
+    "Updated tsconfig.json to exclude scripts/ from compilation",
+    "Updated .gitignore to allow .env.example while keeping .env.local secret",
+    "Created DEPLOY.md with full deployment guide (GitHub → Vercel → Env Vars → RLS → Smoke Test)",
+    "Verified build — npx next build passes cleanly with no TypeScript errors"
+  ],
+  "remaining_scope": [],
+  "last_completed": "Iter 48: Auth + Security — Login/Register/Route Protection",
+  "in_progress": "None — Iter 49 complete",
+  "pivot": {
+    "active_file": "supabase/migrations/001_rls_policies.sql",
+    "active_task": "Iter 49 complete. Next: Phase 10 — Supabase Schema Migration (create all 21 tables) + Full RLS verification.",
+    "blocker": null,
+    "last_error": null,
+    "resumed_count": 0
+  },
+  "history": [
+    {
+      "iteration": "Iter 47: Finance Module — Income Sync & Profit Recalculation",
+      "status": "complete",
+      "completed_scope": [
+        "Created IncomeSummaryService — matchIncomeToOrders() + calculateEstimatedIncome()",
+        "Created ProfitRecalculationService — recalculateProfit() + recalculateAll()",
+        "Created incomeSyncAction and profitRecalculateAction server actions",
+        "Comprehensive tests — 18 tests for IncomeSummaryService, 20 tests for ProfitRecalculationService"
+      ],
+      "files_created": 11,
+      "files_modified": 1,
+      "certificate": ".checkpoint/cert-047.md",
+      "timestamp": "2026-07-26T18:30:00Z"
+    },
+    {
+      "iteration": "Iter 48: Auth + Security — Login/Register/Route Protection",
+      "status": "complete",
+      "completed_scope": [
+        "SessionProvider implemented with server action session fetching and client-side refresh",
+        "Login page with email/password authentication using Supabase",
+        "Register page with email/password signup and auto-email confirmation redirect",
+        "Unauthorized page for access-denied scenarios",
+        "Dashboard layout protected with server-side redirect to login",
+        "Sidebar updated with user info and sign-out button",
+        "Middleware added for cookie-based route protection on all protected routes",
+        "Button component enhanced with Link href support",
+        "Barrel exports updated for auth components"
+      ],
+      "files_created": 9,
+      "files_modified": 5,
+      "certificate": ".checkpoint/cert-auth.md",
+      "timestamp": "2026-07-26T18:30:00Z"
+    },
+    {
+      "iteration": "Iter 49: Deploy Prep — Tailwind Shim, .env.example, vercel.json, RLS Policies, Build Verification",
+      "status": "complete",
+      "completed_scope": [
+        "tailwind.config.ts shim created for shadcn CLI compatibility",
+        ".env.example template created without real credentials",
+        "vercel.json configured with Singapore region and security headers",
+        "RLS migration SQL created covering all 21 tables",
+        "migrate.ts CLI script created for applying migrations",
+        "DEPLOY.md documentation created with full step-by-step guide",
+        "Build verification passed — npx next build succeeds with no errors"
+      ],
+      "files_created": 7,
+      "files_modified": 2,
+      "certificate": ".checkpoint/cert-deploy.md",
+      "timestamp": "2026-07-27T01:00:00Z"
+    }
+  ]
+}

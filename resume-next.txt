@@ -1,0 +1,11 @@
+# Resume Gate — TokoBox ERP Cloud
+Phase: Phase 4: Import Pipeline
+Iteration: Iter 22: Upload History Page
+Progress: 100%
+Next Action: Iter 23 — Phase 4 Finalize. Integration tests, certificates update, Phase 5 roadmap preparation.
+Pivot File: app/upload/history/page.tsx
+Key Files (baca 3 ini untuk lanjut):
+  1. app/upload/history/page.tsx
+  2. src/features/upload/components/UploadHistoryTable.tsx
+  3. src/features/upload/actions/getImportHistoryAction.ts
+See: .checkpoint/cert-022.md
