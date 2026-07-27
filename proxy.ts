@@ -1,6 +1,7 @@
 /**
- * Middleware — Route protection for authenticated routes.
+ * Proxy — Route protection for authenticated routes.
  * Uses cookie-based session validation to protect dashboard routes.
+ * Replaces deprecated middleware convention (Next.js 16+).
  */
 
 import { NextResponse } from "next/server";
@@ -27,8 +28,13 @@ const PUBLIC_EXCLUDES = [
   "/unauthorized",
 ];
 
-export async function middleware(req: NextRequest) {
-  const pathname = req.nextUrl.pathname;
+// Match all routes except static assets
+export const matcher = [
+  "/((?!api|_next/static|_next/chunk|favicon.ico).*)",
+];
+
+export async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
 
   // Check if this is a public route
   if (PUBLIC_EXCLUDES.some((route) => pathname.startsWith(route))) {
@@ -42,12 +48,12 @@ export async function middleware(req: NextRequest) {
   }
 
   // Read Supabase auth session token from cookie
-  const cookieStore = req.cookies;
+  const cookieStore = request.cookies;
   const sessionToken = cookieStore.get("auth.token")?.value;
 
   if (!sessionToken) {
     // No session cookie → redirect to login
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // Verify token signature and decode (simple payload check only, no signature verification)
@@ -56,23 +62,18 @@ export async function middleware(req: NextRequest) {
     const base64Url = sessionToken.split(".")[1];
     if (!base64Url) throw new Error("Invalid token");
 
-    const decoded = JSON.parse(atob(base64Url.replace(/-/g, "+").replace(/_/g, "/")));
-    
+    const decoded = JSON.parse(
+      atob(base64Url.replace(/-/g, "+").replace(/_/g, "/"))
+    );
+
     // Check expiration
     if (decoded.exp && decoded.exp < Date.now() / 1000) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      return NextResponse.redirect(new URL("/login", request.url));
     }
   } catch (err) {
     // Invalid token → redirect to login
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
 }
-
-export const config = {
-  matcher: [
-    /* Apply to all routes except static assets and specific paths */
-    "/((?!api|_next/static|_next/chunk|favicon.ico).*)",
-  ],
-};

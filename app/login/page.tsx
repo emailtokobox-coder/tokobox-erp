@@ -1,5 +1,7 @@
 "use client";
 
+/* ─── Dependencies & Imports ─────────────────────────────────────────────────────── */
+
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -7,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { createSupabaseClient } from "@/lib/supabase/client";
+
+/* ─── LoginPage Component ────────────────────────────────────────────────────────── */
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,6 +21,8 @@ export default function LoginPage() {
   const registeredMessage = searchParams.get("registered")
     ? "Akun berhasil dibuat! Silakan cek email untuk konfirmasi sebelum login."
     : "";
+
+  /* ─── Form Handler ────────────────────────────────────────────────────────────── */
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,19 +37,33 @@ export default function LoginPage() {
     try {
       const supabase = createSupabaseClient();
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
 
-      if (authError) throw new Error(authError.message);
+      if (authError) {
+        /* ─── Map Supabase error codes to user-friendly messages ─────────────────── */
+        const errorMessage =
+          authError.message === "Invalid login credentials"
+            ? "Email atau password salah."
+            : authError.message === "Email not confirmed"
+              ? "Email belum dikonfirmasi. Silakan cek inbox Anda."
+              : "Gagal masuk. Silakan coba lagi.";
+        
+        throw new Error(errorMessage);
+      }
 
       if (data.session) {
         router.push("/dashboard");
       } else {
-        router.push("/login?registered=true");
+        setError("Tidak ada sesi yang dibuat. Silakan coba lagi.");
+        return;
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal masuk. Silakan coba lagi.");
+      /* ─── Catch any errors and display them to user ───────────────────────────── */
+      setError(
+        err instanceof Error ? err.message : "Gagal masuk. Silakan coba lagi."
+      );
     } finally {
       setLoading(false);
     }
