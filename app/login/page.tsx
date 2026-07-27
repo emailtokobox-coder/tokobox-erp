@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { signInAction } from "@/lib/auth/actions";
+import { createSupabaseClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,20 +18,44 @@ export default function LoginPage() {
     ? "Akun berhasil dibuat! Silakan cek email untuk konfirmasi sebelum login."
     : "";
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setLoading(true);
     setError(null);
 
-    try {
-      const result = await signInAction(formData);
-      if (result?.error) {
-        setError(result.error);
-      }
-    } catch (err: any) {
-      setError(err?.message || "Gagal masuk. Silakan coba lagi.");
-    } finally {
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const supabase = createSupabaseClient();
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (authError) {
+      /* Map Supabase error codes to user-friendly Indonesian messages */
+      const errorMessage =
+        authError.message === "Invalid login credentials"
+          ? "Email atau password salah."
+          : authError.message === "Email not confirmed"
+            ? "Email belum dikonfirmasi. Silakan cek inbox Anda."
+            : "Gagal masuk. Silakan coba lagi.";
+
+      setError(errorMessage);
       setLoading(false);
+      return;
     }
+
+    if (!data?.session) {
+      setError("Tidak ada sesi yang dibuat. Silakan coba lagi.");
+      setLoading(false);
+      return;
+    }
+
+    /* Login successful — redirect to dashboard */
+    router.push("/dashboard");
   };
 
   return (
@@ -52,8 +77,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form action={handleSubmit} className="space-y-4">
-            <input type="hidden" name="__action" value="signIn" />
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Input id="email" name="email" type="email" label="Email" placeholder="nama@email.com" required />
             </div>
