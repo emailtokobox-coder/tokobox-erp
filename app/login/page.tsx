@@ -1,19 +1,14 @@
 "use client";
 
-/* ─── Dependencies & Imports ─────────────────────────────────────────────────────── */
-
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { createSupabaseClient } from "@/lib/supabase/client";
-
-/* ─── LoginPage Component ────────────────────────────────────────────────────────── */
+import { signInAction } from "@/lib/auth/actions";
 
 export default function LoginPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,48 +17,17 @@ export default function LoginPage() {
     ? "Akun berhasil dibuat! Silakan cek email untuk konfirmasi sebelum login."
     : "";
 
-  /* ─── Form Handler ────────────────────────────────────────────────────────────── */
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (formData: FormData) => {
     setLoading(true);
     setError(null);
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
     try {
-      const supabase = createSupabaseClient();
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (authError) {
-        /* ─── Map Supabase error codes to user-friendly messages ─────────────────── */
-        const errorMessage =
-          authError.message === "Invalid login credentials"
-            ? "Email atau password salah."
-            : authError.message === "Email not confirmed"
-              ? "Email belum dikonfirmasi. Silakan cek inbox Anda."
-              : "Gagal masuk. Silakan coba lagi.";
-        
-        throw new Error(errorMessage);
+      const result = await signInAction(formData);
+      if (result?.error) {
+        setError(result.error);
       }
-
-      if (data.session) {
-        router.push("/dashboard");
-      } else {
-        setError("Tidak ada sesi yang dibuat. Silakan coba lagi.");
-        return;
-      }
-    } catch (err) {
-      /* ─── Catch any errors and display them to user ───────────────────────────── */
-      setError(
-        err instanceof Error ? err.message : "Gagal masuk. Silakan coba lagi."
-      );
+    } catch (err: any) {
+      setError(err?.message || "Gagal masuk. Silakan coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -88,7 +52,8 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form action={handleSubmit} className="space-y-4">
+            <input type="hidden" name="__action" value="signIn" />
             <div className="space-y-2">
               <Input id="email" name="email" type="email" label="Email" placeholder="nama@email.com" required />
             </div>
