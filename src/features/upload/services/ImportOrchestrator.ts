@@ -207,7 +207,7 @@ export class ImportOrchestrator {
     /* ─── Step 3: DB write within transaction ─── */
 
     const transaction = new DbTransaction(this.client)
-    const txBegin = await transaction.begin()
+    const txBegin = await transaction.begin(); console.log('[DEBUG] Transaction begin:', txBegin.success ? '✓' : '✗', txBegin.error)
 
     if (!txBegin.success) {
       return {
@@ -234,7 +234,7 @@ export class ImportOrchestrator {
 
       // Insert order headers
       if (orderHeaders.size > 0) {
-        const headerResult = await transaction.insertOrders(Array.from(orderHeaders.values()))
+        console.log('[DEBUG] Inserting order headers:', orderHeaders.size); const headerResult = await transaction.insertOrders(Array.from(orderHeaders.values()))
         if (!headerResult.success) {
           throw new Error(`Gagal insert order headers: ${headerResult.error}`)
         }
@@ -242,7 +242,7 @@ export class ImportOrchestrator {
 
       // Insert order items
       if (orderResult.data.length > 0) {
-        const itemResult = await transaction.insertOrderItems(orderResult.data)
+        console.log('[DEBUG] Inserting order items:', orderResult.data.length); const itemResult = await transaction.insertOrderItems(orderResult.data)
         if (!itemResult.success) {
           throw new Error(`Gagal insert order items: ${itemResult.error}`)
         }
@@ -250,7 +250,7 @@ export class ImportOrchestrator {
 
       // Insert new income rows
       if (incomeResult.data.length > 0) {
-        const incomeDbResult = await transaction.insertIncome(incomeResult.data)
+        console.log('[DEBUG] Inserting income:', incomeResult.data.length); const incomeDbResult = await transaction.insertIncome(incomeResult.data)
         if (!incomeDbResult.success) {
           throw new Error(`Gagal insert income: ${incomeDbResult.error}`)
         }
@@ -258,7 +258,7 @@ export class ImportOrchestrator {
 
       // Update existing income rows where values differ
       if (incomeResult.toUpdate.length > 0) {
-        const updateResult = await transaction.updateIncome(incomeResult.toUpdate)
+        console.log('[DEBUG] Updating income:', incomeResult.toUpdate.length); const updateResult = await transaction.updateIncome(incomeResult.toUpdate)
         if (!updateResult.success) {
           throw new Error(`Gagal update income: ${updateResult.error}`)
         }
@@ -306,7 +306,7 @@ export class ImportOrchestrator {
       }
 
       // Commit
-      const commitResult = await transaction.commit()
+      const commitResult = await transaction.commit(); console.log('[DEBUG] Transaction commit:', commitResult.success ? '✓' : '✗', commitResult.error)
       if (!commitResult.success) {
         throw new Error(`Gagal commit transaksi: ${commitResult.error}`)
       }

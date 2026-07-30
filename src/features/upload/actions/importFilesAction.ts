@@ -86,6 +86,8 @@ export async function importFilesAction(
 ): Promise<OrchestratorResult> {
   /* 1. Create Supabase client */
   const client = createSupabaseClient();
+  console.log('[DEBUG] importFilesAction: Supabase client created');
+console.log('[DEBUG] importFilesAction: Supabase client created');
 
   /* 2. Extract files from FormData */
   const orderFile = formData.get("orderFile") as File | null;
@@ -263,6 +265,10 @@ export async function importFilesAction(
   }
 
   /* 6. Fetch existing income for idempotency (PRD 3.10 rules 2-4) */
+  console.log('[DEBUG] Ready to run orchestrator:', {
+    hasOrder: !!payload.orderBuffer,
+    hasIncome: !!payload.incomeBuffer,
+  });
   if (needsIncomeFetch) {
     try {
       payload.existingIncome = await fetchExistingIncome(client);
@@ -275,6 +281,14 @@ export async function importFilesAction(
   /* 7. Run orchestrator */
   const orchestrator = new ImportOrchestrator(client);
   const result = await orchestrator.run(payload);
+  console.log('[DEBUG] Orchestrator result:', {
+    success: result.success,
+    transactionCommitted: result.transactionCommitted,
+    ordersSuccess: result.orders.success,
+    incomeSuccess: result.income.success,
+    errors: result.errors,
+    toUpdateLength: result.income?.toUpdate?.length || 0,
+  });
 
   /* Post-import triggers: sync income and recalc profit if needed */
   if (result.transactionCommitted) {
