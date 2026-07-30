@@ -10,8 +10,10 @@
  *   - supplierPrices table: price history per supplier per base_product
  */
 
-import { createSupabaseClient } from "@/lib/supabase/client"
-import type { Supplier, SupplierPrice, SupplierFilter, SupplierFormData } from "../types"
+"use server";
+
+import { createSupabaseClient } from "@/lib/supabase/client";
+import type { Supplier, SupplierPrice, SupplierFilter, SupplierFormData } from "../types";
 
 // ─── Helper: slugify nama → id ───
 

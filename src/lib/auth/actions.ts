@@ -1,16 +1,12 @@
-/**
- * @module lib/auth/actions
- * Authentication server actions — signIn, signUp, signOut.
- * Uses Supabase auth client integrated with Next.js App Router.
- */
+"use server";
 
 import { redirect } from "next/navigation";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerClient } from "@/lib/supabase/server";
 
-/* ─── Sign In ──────────────────────────────────────────────────────────────── */
+// ─── Sign In ──────────────────────────────────────────────────────────────
 
 export async function signInAction(formData: FormData): Promise<void | { error: string }> {
-  const supabase = createSupabaseClient();
+  const supabase = await createServerClient();
 
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -42,10 +38,10 @@ export async function signInAction(formData: FormData): Promise<void | { error: 
   redirect("/dashboard");
 }
 
-/* ─── Sign Up ──────────────────────────────────────────────────────────────── */
+// ─── Sign Up ──────────────────────────────────────────────────────────────
 
 export async function signUpAction(formData: FormData): Promise<void | { error: string }> {
-  const supabase = createSupabaseClient();
+  const supabase = await createServerClient();
 
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -84,19 +80,11 @@ export async function signUpAction(formData: FormData): Promise<void | { error: 
   redirect("/login?registered=true");
 }
 
-/* ─── Sign Out ─────────────────────────────────────────────────────────────── */
-
-export async function signOutAction(): Promise<void> {
-  const supabase = createSupabaseClient();
-
-  await supabase.auth.signOut();
-  redirect("/login");
-}
-
-/* ─── Get Current Session ──────────────────────────────────────────────────── */
+// ─── Get Current Session (for server components) ───────────────────────────
 
 export async function getSessionAction() {
-  const { data: { session }, error } = await createSupabaseClient().auth.getSession();
+  const supabase = await createServerClient();
+  const { data: { session }, error } = await supabase.auth.getSession();
 
   if (error || !session) {
     return null;
@@ -108,10 +96,11 @@ export async function getSessionAction() {
   };
 }
 
-/* ─── Get Current User ─────────────────────────────────────────────────────── */
+// ─── Get Current User (with initials) ───────────────────────────────────────
 
 export async function getCurrentUserAction() {
-  const { data: { session }, error } = await createSupabaseClient().auth.getSession();
+  const supabase = await createServerClient();
+  const { data: { session }, error } = await supabase.auth.getSession();
 
   if (error || !session) {
     return null;
@@ -124,7 +113,7 @@ export async function getCurrentUserAction() {
   };
 }
 
-/* ─── Helpers ──────────────────────────────────────────────────────────────── */
+// ─── Helpers ───────────────────────────────────────────────────────────────
 
 function getAvatarInitials(email: string): string {
   if (!email) return "?";

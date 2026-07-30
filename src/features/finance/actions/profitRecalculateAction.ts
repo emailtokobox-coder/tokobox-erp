@@ -15,9 +15,11 @@
  * ServerAction → ProfitRecalculationService → DB update
  */
 
-import { createSupabaseClient } from "@/lib/supabase/client"
-import { ProfitRecalculationService } from "@/features/finance/services/ProfitRecalculationService"
-import type { OrderHeader, AdjustmentRecord } from "@/features/orders/types/OrderItem"
+"use server";
+
+import { createSupabaseClient } from "@/lib/supabase/client";
+import { ProfitRecalculationService } from "@/features/finance/services/ProfitRecalculationService";
+import type { OrderHeader, AdjustmentRecord } from "@/features/orders/types/OrderItem";
 
 // ─── Result Type ───
 
@@ -53,7 +55,7 @@ export interface ProfitRecalculateResult {
 export async function profitRecalculateAction(
   storeId: string,
 ): Promise<ProfitRecalculateResult> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
   const errors: string[] = []
   const updatedOrders: ProfitRecalculateResult["updatedOrders"] = []
 

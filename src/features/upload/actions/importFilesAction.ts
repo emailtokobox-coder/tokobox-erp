@@ -9,6 +9,8 @@
  *   const result = await importFilesAction(formData);
  */
 
+"use server";
+
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { ImportOrchestrator } from "../services/ImportOrchestrator";
 import type { ImportPayload, OrchestratorResult } from "../services/ImportOrchestrator";

@@ -12,9 +12,12 @@
  * ServerAction → IncomeSummaryService → DB update (via service/repository)
  */
 
-import { createSupabaseClient } from "@/lib/supabase/client"
-import { IncomeSummaryService } from "@/features/finance/services/IncomeSummaryService"
-import type { OrderHeader, IncomeRecord } from "@/features/orders/types/OrderItem"
+"use server";
+
+import { SupabaseClient } from "@supabase/supabase-js";
+import { createSupabaseClient } from "@/lib/supabase/client";
+import { IncomeSummaryService } from "@/features/finance/services/IncomeSummaryService";
+import type { OrderHeader, IncomeRecord } from "@/features/orders/types/OrderItem";
 
 // ─── Result Type ───
 
@@ -47,7 +50,7 @@ export interface IncomeSyncResult {
  * @returns IncomeSyncResult with counts and errors
  */
 export async function incomeSyncAction(storeId: string): Promise<IncomeSyncResult> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
   const errors: string[] = []
   const updatedOrders: IncomeSyncResult["updatedOrders"] = []
 
@@ -220,7 +223,7 @@ export async function incomeSyncAction(storeId: string): Promise<IncomeSyncResul
 // ─── Helper: Get Marketplace Rate from Settings ───
 
 async function getMarketplaceRate(
-  client: ReturnType<typeof createSupabaseClient>,
+  client: SupabaseClient,
   storeId: string,
 ): Promise<number> {
   try {

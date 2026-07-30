@@ -1,15 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { signUpAction } from "@/lib/auth/actions";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,42 +16,16 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const confirmPassword = formData.get("confirmPassword") as string;
-
-    // Client-side validation
-    if (password.length < 8) {
-      setError("Password minimal 8 karakter.");
-      setLoading(false);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Password dan konfirmasi password tidak cocok.");
-      setLoading(false);
-      return;
-    }
+    const formData = new FormData(e.currentTarget);
 
     try {
-      const supabase = createSupabaseClient();
-      const { data, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (authError) throw new Error(authError.message);
-
-      if (data.user && !data.session) {
-        router.push("/login?registered=true");
-      } else if (data.session) {
-        router.push("/dashboard");
+      const result = await signUpAction(formData);
+      if (result && "error" in result) {
+        setError(result.error);
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal mendaftar. Silakan coba lagi.");
-    } finally {
+    } catch {
+      setError("Gagal mendaftar. Silakan coba lagi.");
       setLoading(false);
     }
   };

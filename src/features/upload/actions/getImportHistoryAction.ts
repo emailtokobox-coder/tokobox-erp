@@ -9,6 +9,8 @@
  *   const history = await getImportHistoryAction({ page: 1, pageSize: 20 });
  */
 
+"use server";
+
 import { createSupabaseClient } from "@/lib/supabase/client";
 
 /* ─── Import History Entry ─── */

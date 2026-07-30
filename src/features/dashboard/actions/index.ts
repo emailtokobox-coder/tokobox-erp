@@ -6,8 +6,10 @@
  *   Page (server) → getDashboardSummaryAction → DashboardData
  */
 
-import { createSupabaseClient } from "@/lib/supabase/client"
-import type { DashboardData, DailyTrend, InsightItem, FinanceRealTime } from "../types"
+"use server";
+
+import { createSupabaseClient } from "@/lib/supabase/client";
+import type { DashboardData, DailyTrend, InsightItem, FinanceRealTime } from "../types";
 import { buildSummary } from "@/features/orders/domain/OrderCalculator"
 
 // ─── Helper: format date range for last 7 days ───
@@ -136,7 +138,7 @@ function buildInsights(
  * Aggregates order headers + items for KPI cards, trends, and insights.
  */
 export async function getDashboardSummaryAction(): Promise<DashboardData> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
 
   // Fetch all order headers
   const { data: headersData } = await client

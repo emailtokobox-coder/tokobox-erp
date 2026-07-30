@@ -2,36 +2,31 @@
  * @module manual-orders/actions
  * Server Actions — bridge between UI components and ManualOrderRepositories.
  *
- * These connect to Supabase via ManualOrderSupabaseRepository.
- *
- * Usage in components:
- *   const orders = await getManualOrdersAction({ tipe: "MANUAL_CASH" })
+ * Types are re-exported from the dedicated types barrel:
+ * @see ../types/index.ts
  */
 
-import { createSupabaseClient } from "@/lib/supabase/client"
+"use server";
+
+import { createSupabaseClient } from "@/lib/supabase/client";
 import {
-  ManualOrderSupabaseRepository,
-  DpPaymentSupabaseRepository,
-  TerminPaymentSupabaseRepository,
-  ResiDataSupabaseRepository,
-  WhatsAppLogSupabaseRepository,
-} from "../repositories"
-import type { ManualOrder, ManualOrderItem, DpPayment, TerminPayment, ResiData, WhatsAppLog } from "../types/ManualOrder"
-import type { ManualOrderFilter } from "../types/ManualOrderFilter"
-import type { ManualOrderType, ManualOrderStatus, PaymentMethod, WhatsAppType } from "../constants/manualOrderStatus"
-
-// ─── Re-export types for convenience ───
-
-export type { ManualOrder, ManualOrderItem, DpPayment, TerminPayment, ResiData, WhatsAppLog }
-export type { ManualOrderType, ManualOrderStatus, PaymentMethod, WhatsAppType }
+	ManualOrderSupabaseRepository,
+	DpPaymentSupabaseRepository,
+	TerminPaymentSupabaseRepository,
+	ResiDataSupabaseRepository,
+	WhatsAppLogSupabaseRepository,
+} from "../repositories";
+import type { ManualOrder, ManualOrderItem, DpPayment, TerminPayment, ResiData, WhatsAppLog } from "../types/ManualOrder";
+import type { ManualOrderFilter } from "../types/ManualOrderFilter";
+import type { WhatsAppType } from "../constants/manualOrderStatus";
 
 // ─── Result Types ───
 
 export interface ManualOrderListResult {
-  orders: ManualOrder[]
-  total: number
-  page: number
-  pageSize: number
+	orders: ManualOrder[];
+	total: number;
+	page: number;
+	pageSize: number;
 }
 
 // ─── Supabase Instances ───

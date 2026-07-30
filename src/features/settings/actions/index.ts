@@ -9,8 +9,10 @@
  *   - Backup manager (database, invoice PDF, foto resi, arsip)
  */
 
-import { createSupabaseClient } from "@/lib/supabase/client"
-import type { StoreProfile, AppSettings, UserAccount, UserRole, BackupRecord, BackupType } from "../types"
+"use server";
+
+import { createSupabaseClient } from "@/lib/supabase/client";
+import type { StoreProfile, AppSettings, UserAccount, UserRole, BackupRecord, BackupType } from "../types";
 
 // ─── Supabase Client ───
 

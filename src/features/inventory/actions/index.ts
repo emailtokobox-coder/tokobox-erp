@@ -6,7 +6,9 @@
  *   Page (server) → actions → Supabase tables (hppSkus, stockMovements, stockSaldo, orderItems)
  */
 
-import { createSupabaseClient } from "@/lib/supabase/client"
+"use server";
+
+import { createSupabaseClient } from "@/lib/supabase/client";
 import type {
   HppSku,
   StockMovement,
@@ -24,7 +26,7 @@ import type { SaldoSyncResult } from "../services/StockSaldoService"
  * Fetch all HPP SKUs for the current store.
  */
 export async function getHppListAction(): Promise<HppSku[]> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
   const { data } = await client
     .from("hppSkus")
     .select("*")
@@ -54,7 +56,7 @@ export async function saveHppAction(data: {
   hpp: number
   namaProduk: string
 }): Promise<HppSku | null> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
 
   // Check if SKU already exists
   const { data: existing } = await client
@@ -122,7 +124,7 @@ export async function saveHppAction(data: {
  * Delete HPP for a SKU.
  */
 export async function deleteHppAction(skuNormalized: string): Promise<boolean> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
   const { error } = await client
     .from("hppSkus")
     .delete()
@@ -137,7 +139,7 @@ export async function deleteHppAction(skuNormalized: string): Promise<boolean> {
  * Fetch all stock saldo.
  */
 export async function getStockSaldoAction(): Promise<StockSaldo[]> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
   const { data } = await client
     .from("stockSaldo")
     .select("*")
@@ -159,7 +161,7 @@ export async function updateStockSaldoAction(data: {
   baseProduct: string
   saldo: number
 }): Promise<StockSaldo | null> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
 
   const { data: existing } = await client
     .from("stockSaldo")
@@ -208,7 +210,7 @@ export async function updateStockSaldoAction(data: {
 export async function getStockMovementsAction(
   filter?: InventoryFilter
 ): Promise<StockMovement[]> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
   let query = client.from("stockMovements").select("*").order("tanggal", { ascending: false })
 
   if (filter?.search) {
@@ -257,7 +259,7 @@ export async function createStockMovementAction(data: {
   supplier?: string
   keterangan?: string
 }): Promise<StockMovement | null> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
   const { data: inserted } = await client
     .from("stockMovements")
     .insert({
@@ -299,7 +301,7 @@ export async function createStockMovementAction(data: {
 export async function syncStockSaldoAction(): Promise<
   SaldoSyncResult & { warnings: string[] }
 > {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
 
   // Fetch all stock movements
   const { data: movementsData } = await client
@@ -365,7 +367,7 @@ export async function syncStockSaldoAction(): Promise<
 export async function getLastSyncDateAction(): Promise<{
   lastSyncAt: string | null
 }> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
   const { data } = await client
     .from("stockSaldo")
     .select("last_updated")
@@ -384,7 +386,7 @@ export async function getLastSyncDateAction(): Promise<{
  * Reuses buildHppResolver from OrderCalculator domain.
  */
 export async function getHppResolverAction(): Promise<HppIssue[]> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
 
   // Fetch order items without HPP
   const { data: itemsData } = await client

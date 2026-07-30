@@ -8,14 +8,12 @@
  *   const orders = await getOrdersAction({ search: "ORD-001", page: 1 })
  */
 
-import { createSupabaseClient } from "@/lib/supabase/client"
-import type { OrderItem, OrderHeader, IncomeRecord, AdjustmentRecord } from "../types/OrderItem"
+"use server";
+
+import { createSupabaseClient } from "@/lib/supabase/client";
+import type { OrderItem, OrderHeader, IncomeRecord, AdjustmentRecord } from "../types/OrderItem";
 import type { OrderFilter } from "../types/OrderFilter"
 import type { RawOrderItem } from "../mappers/OrderItemMapper"
-
-// ─── Re-export types for convenience ───
-
-export type { OrderItem, OrderHeader, OrderFilter }
 
 // ─── Result Types ───
 

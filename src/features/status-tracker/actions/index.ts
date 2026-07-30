@@ -6,6 +6,8 @@
  * kanban board and timeline display.
  */
 
+"use server";
+
 import { getManualOrdersAction } from "@/features/manual-orders"
 import { getOrdersAction } from "@/features/orders/actions"
 import type { UnifiedOrder, StatusTrackerFilter } from "../types"

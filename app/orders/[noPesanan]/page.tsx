@@ -8,7 +8,7 @@
 
 import { Suspense } from "react";
 import { getOrderDetailAction } from "@/features/orders/actions";
-import type { OrderItem, OrderHeader } from "@/features/orders/actions";
+import type { OrderItem, OrderHeader } from "@/features/orders/types";
 import type { IncomeRecord, AdjustmentRecord } from "@/features/orders/types/OrderItem";
 import OrderDetailTable from "@/features/orders/components/OrderDetailTable";
 

@@ -28,7 +28,8 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import DeleteOrderDialog from "./dialogs/DeleteOrderDialog";
-import { getOrdersAction, type OrderListResult, type OrderHeader } from "../actions";
+import { getOrdersAction, type OrderListResult } from "../actions";
+import type { OrderHeader } from "@/features/orders/types";
 import { ORDER_STATUSES } from "../constants/orderStatus";
 
 /* ─── Format Helpers ─── */

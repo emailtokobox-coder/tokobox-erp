@@ -6,56 +6,41 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { signInAction } from "@/lib/auth/actions";
+import { useSession } from "@/components/providers/SessionProvider";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { session } = useSession();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const registeredMessage = searchParams.get("registered")
     ? "Akun berhasil dibuat! Silakan cek email untuk konfirmasi sebelum login."
     : "";
 
+  if (session) {
+    router.push("/dashboard");
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setServerError(null);
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+    const formData = new FormData(e.currentTarget);
 
-    const supabase = createSupabaseClient();
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-
-    if (authError) {
-      /* Map Supabase error codes to user-friendly Indonesian messages */
-      const errorMessage =
-        authError.message === "Invalid login credentials"
-          ? "Email atau password salah."
-          : authError.message === "Email not confirmed"
-            ? "Email belum dikonfirmasi. Silakan cek inbox Anda."
-            : "Gagal masuk. Silakan coba lagi.";
-
-      setError(errorMessage);
+    try {
+      const result = await signInAction(formData);
+      if (result && "error" in result) {
+        setServerError(result.error);
+        setLoading(false);
+      }
+    } catch {
+      setServerError("Gagal masuk. Silakan coba lagi.");
       setLoading(false);
-      return;
     }
-
-    if (!data?.session) {
-      setError("Tidak ada sesi yang dibuat. Silakan coba lagi.");
-      setLoading(false);
-      return;
-    }
-
-    /* Login successful — redirect to dashboard */
-    router.push("/dashboard");
   };
 
   return (
@@ -66,12 +51,12 @@ export default function LoginPage() {
           <CardDescription>Masuk ke akun Anda untuk melanjutkan</CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
+          {serverError && (
             <div className="bg-destructive/10 text-destructive text-sm p-3 rounded mb-4" role="alert">
-              {error}
+              {serverError}
             </div>
           )}
-          {registeredMessage && (
+          {registeredMessage && !serverError && (
             <div className="bg-green-500/10 text-green-700 text-sm p-3 rounded mb-4" role="alert">
               {registeredMessage}
             </div>
@@ -83,7 +68,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Input id="password" name="password" type="password" label="Password" required />
+              <Input id="password" name="password" type="password" label="Password" placeholder="••••••" required />
             </div>
 
             <Button type="submit" size="lg" fullWidth disabled={loading}>

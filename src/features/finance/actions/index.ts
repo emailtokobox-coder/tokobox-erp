@@ -10,8 +10,10 @@
  *   - getProfitAction: fetch monthly profit report
  */
 
-import { createSupabaseClient } from "@/lib/supabase/client"
-import type { IncomeRecord, IncomeFilter, MonthlyProfit, ProfitBreakdown, ProfitFilter, ProfitReportResult } from "../types"
+"use server";
+
+import { createSupabaseClient } from "@/lib/supabase/client";
+import type { IncomeRecord, IncomeFilter, MonthlyProfit, ProfitBreakdown, ProfitFilter, ProfitReportResult } from "../types";
 
 // ─── Income Actions ───
 
@@ -22,7 +24,7 @@ import type { IncomeRecord, IncomeFilter, MonthlyProfit, ProfitBreakdown, Profit
 export async function getIncomeAction(
   filter?: IncomeFilter
 ): Promise<IncomeRecord[]> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
 
   let query = client
     .from("incomes")
@@ -75,7 +77,7 @@ export async function getIncomeAction(
 export async function getProfitAction(
   filter?: ProfitFilter
 ): Promise<ProfitReportResult> {
-  const client = createSupabaseClient()
+  const client = createSupabaseClient();
 
   // Determine year range
   const currentYear = filter?.year ?? new Date().getFullYear()
