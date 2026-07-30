@@ -285,7 +285,7 @@ export default function UploadForm() {
     try {
       const result = await importFilesAction(formData);
       setState({
-        step: result.success ? "result" : "preview",
+        step: "result",
         preview: state.preview,
         result,
         isImporting: false,
