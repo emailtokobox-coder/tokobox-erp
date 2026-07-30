@@ -295,7 +295,7 @@ export default function UploadForm() {
       const errorOrcResult: OrchestratorResult = {
         success: false,
         orders: { success: false, status: "error", data: [] as OrderItemProcessed[], errors: [], warnings: [], summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 } },
-        income: { success: false, status: "error", data: [] as IncomeRow[], errors: [], warnings: [], summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 } },
+        income: { success: false, status: "error", data: [] as IncomeRow[], toUpdate: [], errors: [], warnings: [], summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 } },
         adjustments: { success: false, status: "error", data: [] as AdjustmentRow[], errors: [], warnings: [], summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 } },
         hpp: { success: false, status: "error", data: [] as HppRow[], errors: [], warnings: [], summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 }, hppMap: new Map() },
       grosir: { success: false, status: "error", data: [] as GrosirRow[], errors: [], warnings: [], summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 }, grosirMap: new Map() },

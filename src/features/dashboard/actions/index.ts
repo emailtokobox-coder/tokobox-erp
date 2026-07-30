@@ -140,16 +140,33 @@ function buildInsights(
 export async function getDashboardSummaryAction(): Promise<DashboardData> {
   const client = createSupabaseClient();
 
-  // Fetch all order headers
-  const { data: headersData } = await client
-    .from("orderHeaders")
-    .select("*")
-    .order("waktu_pesanan_dibuat", { ascending: false })
+  /* ─── Get current store_id from settings ─── */
+  let storeId: string | null = null;
+  try {
+    const { data: setting, error } = await client
+      .from("settings")
+      .select("store_id")
+      .single();
+    if (!error && setting?.store_id) {
+      storeId = setting.store_id;
+    }
+  } catch (err) {
+    console.warn("Gagal fetch store_id untuk filter dashboard:", err);
+  }
 
-  // Fetch all order items
-  const { data: itemsData } = await client
-    .from("orderItems")
-    .select("*")
+  /* ─── Fetch order headers with optional store_id filter ─── */
+  let query = client.from("orderHeaders").select("*").order("waktu_pesanan_dibuat", { ascending: false });
+  if (storeId) {
+    query = query.eq("store_id", storeId);
+  }
+  const { data: headersData } = await query;
+
+  /* ─── Fetch order items with optional store_id filter ─── */
+  query = client.from("orderItems").select("*");
+  if (storeId) {
+    query = query.eq("store_id", storeId);
+  }
+  const { data: itemsData } = await query;
 
   const headers = (headersData ?? []).map((row) => ({
     id: row.id,

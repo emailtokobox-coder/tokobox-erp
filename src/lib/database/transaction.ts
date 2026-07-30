@@ -349,6 +349,70 @@ export class DbTransaction {
   }
 
   /**
+   * Update existing income rows where the matching no_pesanan already exists in the database.
+   * Used when re-importing income with different values than existing records.
+   * Business logic per PRD Section 3.10 idempotency rules.
+   * @param updates - Array of old/new pairs; only the new values are used for update
+   * @returns TransactionResult with list of updated rows
+   */
+  async updateIncome(
+    updates: Array<{ old: IncomeRow; new: IncomeRow }>
+  ): Promise<TransactionResult<IncomeRow[]>> {
+    if (!this.active) {
+      return { success: false, error: "Transaksi belum dimulai. Panggil begin() terlebih dahulu." };
+    }
+
+    if (updates.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    try {
+      for (const update of updates) {
+        const { new: newRow } = update;
+        const result = await applyTxHeaders(
+          this.client
+            .from("income")
+            .update({
+              no_pengajuan: newRow.noPengajuan,
+              waktu_pesanan_dibuat: newRow.waktuPesananDibuat,
+              metode_pembayaran: newRow.metodePembayaran,
+              tanggal_dana_dilepaskan: newRow.tanggalDanaDilepaskan,
+              harga_asli_produk: newRow.hargaAsliProduk,
+              total_diskon_produk: newRow.totalDiskonProduk,
+              refund_buyer: newRow.refundBuyer,
+              ongkir_dibayar_pembeli: newRow.ongkirDibayarPembeli,
+              gratis_ongkir_shopee: newRow.gratisOngkirShopee,
+              ongkir_diteruskan_ke_jasa_kirim: newRow.ongkirDiteruskanKeJasaKirim,
+              ongkir_pengembalian: newRow.ongkirPengembalian,
+              biaya_komisi_ams: newRow.biayaKomisiAms,
+              biaya_administrasi: newRow.biayaAdministrasi,
+              biaya_layanan: newRow.biayaLayanan,
+              biaya_proses_pesanan: newRow.biayaProsesPesanan,
+              income_aktual: newRow.incomeAktual,
+            })
+            .eq("no_pesanan", newRow.noPesanan),
+          this.transactionId || undefined
+        );
+
+        if ('error' in result && result.error) {
+          throw wrapError(result.error, `Gagal update income untuk ${newRow.noPesanan}`);
+        }
+      }
+
+      return { success: true, data: updates.map((u) => u.new) };
+    } catch (err) {
+      await this.autoRollback();
+      return {
+        success: false,
+        error: wrapError(
+          err instanceof Error ? err : new Error(String(err)),
+          "Update income"
+        ).message,
+      };
+    }
+  }
+
+  /**
    * Insert adjustment rows into the `adjustments` table.
    */
   async insertAdjustments(

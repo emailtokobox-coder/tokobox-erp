@@ -54,7 +54,7 @@ export interface ImportPayload {
 export interface OrchestratorResult {
   success: boolean
   orders: ImportResult<OrderItemProcessed>
-  income: ImportResult<IncomeRow>
+  income: ImportResult<IncomeRow> & { toUpdate: Array<{ old: IncomeRow; new: IncomeRow }> }
   adjustments: ImportResult<AdjustmentRow>
   hpp: ImportResult<HppRow> & { hppMap: Map<string, number> }
   grosir: ImportResult<GrosirRow> & { grosirMap: Map<string, GrosirRow[]> }
@@ -123,10 +123,11 @@ export class ImportOrchestrator {
     }
 
     // Parse income (needs existingIncome for idempotency)
-    let incomeResult: ImportResult<IncomeRow> = {
+    let incomeResult: ImportResult<IncomeRow> & { toUpdate: Array<{ old: IncomeRow; new: IncomeRow }> } = {
       success: false,
       status: "parsing",
       data: [],
+      toUpdate: [],
       errors: [],
       warnings: [],
       summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 },
@@ -217,7 +218,7 @@ export class ImportOrchestrator {
         hpp: hppResult,
         grosir: grosirResult,
         stockMovements: [],
-        saldoSyncResult: null,
+       saldoSyncResult: null,
         incomeImported: false,
         adjustmentsImported: false,
         hppImported: false,
@@ -247,11 +248,19 @@ export class ImportOrchestrator {
         }
       }
 
-      // Insert income
-      if (incomeImported) {
+      // Insert new income rows
+      if (incomeResult.data.length > 0) {
         const incomeDbResult = await transaction.insertIncome(incomeResult.data)
         if (!incomeDbResult.success) {
           throw new Error(`Gagal insert income: ${incomeDbResult.error}`)
+        }
+      }
+
+      // Update existing income rows where values differ
+      if (incomeResult.toUpdate.length > 0) {
+        const updateResult = await transaction.updateIncome(incomeResult.toUpdate)
+        if (!updateResult.success) {
+          throw new Error(`Gagal update income: ${updateResult.error}`)
         }
       }
 

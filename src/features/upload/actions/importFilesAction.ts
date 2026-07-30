@@ -14,8 +14,13 @@
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { ImportOrchestrator } from "../services/ImportOrchestrator";
 import type { ImportPayload, OrchestratorResult } from "../services/ImportOrchestrator";
+import type { IncomeRow } from "../types";
 import { profitRecalculateAction } from "@/features/finance/actions/profitRecalculateAction";
 import { incomeSyncAction } from "@/features/finance/actions/incomeSyncAction";
+
+/* ─── Configuration ─── */
+// Max file size: 50MB (default, can be adjusted via env if needed)
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 megabytes
 
 /* ─── Helper: ArrayBuffer from File ─── */
 
@@ -23,54 +28,178 @@ function fileToBuffer(file: File): Promise<ArrayBuffer> {
   return file.arrayBuffer();
 }
 
+/* ─── Helper: Validate file size before processing ─── */
+
+function validateFileSize(file: File, fieldName: string): { error?: string } {
+  if (file.size > MAX_FILE_SIZE) {
+    return { error: `${fieldName} Terlalu besar. Maksimal ${MAX_FILE_SIZE / (1024 * 1024)}MB` };
+  }
+  return {};
+}
+
+/* ─── Helper: Fetch existing income for idempotency check (PRD 3.10) ─── */
+
+async function fetchExistingIncome(
+  client: ReturnType<typeof createSupabaseClient>,
+): Promise<Map<string, IncomeRow>> {
+  const { data } = await client
+    .from("incomes")
+    .select("no_pesanan, income_aktual, tanggal_dana_dilepaskan");
+  if (!data || data.length === 0) return new Map();
+
+  return new Map(
+    data.map((r) => [
+      r.no_pesanan,
+      {
+        noPesanan: r.no_pesanan,
+        noPengajuan: "",
+        waktuPesananDibuat: "",
+        metodePembayaran: "",
+        tanggalDanaDilepaskan: r.tanggal_dana_dilepaskan ?? "",
+        hargaAsliProduk: 0,
+        totalDiskonProduk: 0,
+        refundBuyer: 0,
+        ongkirDibayarPembeli: 0,
+        gratisOngkirShopee: 0,
+        ongkirDiteruskanKeJasaKirim: 0,
+        ongkirPengembalian: 0,
+        biayaKomisiAms: 0,
+        biayaAdministrasi: 0,
+        biayaLayanan: 0,
+        biayaProsesPesanan: 0,
+        incomeAktual: r.income_aktual ?? 0,
+      },
+    ]),
+  );
+}
+
 /* ─── Server Action ─── */
 
 /**
  * Import multiple Excel files into the database.
  *
- * @param formData - FormData containing optional files:
- *   - orderFile: File (Order All)
- *   - incomeFile: File (Income)
- *   - adjustmentFile: File (Adjustment)
- *   - hppFile: File (HPP)
- *   - grosirFile: File (Grosir)
+ * @param formData - FormData containing optional files: orderFile, incomeFile, adjustmentFile, hppFile, grosirFile
  * @returns OrchestratorResult with parse results and transaction status
  */
 export async function importFilesAction(
-  formData: FormData
+  formData: FormData,
 ): Promise<OrchestratorResult> {
   /* 1. Create Supabase client */
   const client = createSupabaseClient();
 
-  /* 2. Build payload from FormData */
+  /* 2. Extract files from FormData */
+  const orderFile = formData.get("orderFile") as File | null;
+  const incomeFile = formData.get("incomeFile") as File | null;
+  const adjustmentFile = formData.get("adjustmentFile") as File | null;
+  const hppFile = formData.get("hppFile") as File | null;
+  const grosirFile = formData.get("grosirFile") as File | null;
+
+  /* 3. Collect validation errors BEFORE any processing */
+  const validationErrors: string[] = [];
+
+  if (orderFile instanceof File) {
+    const sizeCheck = validateFileSize(orderFile, "Order All");
+    if (sizeCheck.error) validationErrors.push(sizeCheck.error);
+  }
+  if (incomeFile instanceof File) {
+    const sizeCheck = validateFileSize(incomeFile, "Income");
+    if (sizeCheck.error) validationErrors.push(sizeCheck.error);
+  }
+  if (adjustmentFile instanceof File) {
+    const sizeCheck = validateFileSize(adjustmentFile, "Adjustment");
+    if (sizeCheck.error) validationErrors.push(sizeCheck.error);
+  }
+  if (hppFile instanceof File) {
+    const sizeCheck = validateFileSize(hppFile, "HPP");
+    if (sizeCheck.error) validationErrors.push(sizeCheck.error);
+  }
+  if (grosirFile instanceof File) {
+    const sizeCheck = validateFileSize(grosirFile, "Grosir");
+    if (sizeCheck.error) validationErrors.push(sizeCheck.error);
+  }
+
+  /* If any validation error, return early without reading buffers */
+  if (validationErrors.length > 0) {
+    return {
+      success: false,
+      orders: {
+        success: false,
+        status: "error",
+        data: [],
+        errors: validationErrors,
+        warnings: [],
+        summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 },
+      },
+      income: {
+        success: false,
+        status: "error",
+        data: [],
+        toUpdate: [],
+        errors: validationErrors,
+        warnings: [],
+        summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 },
+      },
+      adjustments: {
+        success: false,
+        status: "error",
+        data: [],
+        errors: validationErrors,
+        warnings: [],
+        summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 },
+      },
+      hpp: {
+        success: false,
+        status: "error",
+        data: [],
+        errors: validationErrors,
+        warnings: [],
+        summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 },
+        hppMap: new Map(),
+      },
+      grosir: {
+        success: false,
+        status: "error",
+        data: [],
+        errors: validationErrors,
+        warnings: [],
+        summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 },
+        grosirMap: new Map(),
+      },
+      stockMovements: [],
+      saldoSyncResult: null,
+      incomeImported: false,
+      adjustmentsImported: false,
+      hppImported: false,
+      transactionCommitted: false,
+      errors: validationErrors,
+    };
+  }
+
+  /* 4. Build payload from FormData (only after validation passes) */
   const payload: ImportPayload = {};
 
-  const orderFile = formData.get("orderFile");
   if (orderFile instanceof File) {
     payload.orderBuffer = await fileToBuffer(orderFile);
   }
 
-  const incomeFile = formData.get("incomeFile");
-  if (incomeFile instanceof File) {
+  const needsIncomeFetch = incomeFile instanceof File;
+  if (needsIncomeFetch) {
     payload.incomeBuffer = await fileToBuffer(incomeFile);
   }
 
-  const adjustmentFile = formData.get("adjustmentFile");
   if (adjustmentFile instanceof File) {
     payload.adjustmentBuffer = await fileToBuffer(adjustmentFile);
   }
 
-  const hppFile = formData.get("hppFile");
   if (hppFile instanceof File) {
     payload.hppBuffer = await fileToBuffer(hppFile);
   }
 
-  const grosirFile = formData.get("grosirFile");
   if (grosirFile instanceof File) {
     payload.grosirBuffer = await fileToBuffer(grosirFile);
   }
 
-  /* 3. Check if any files were provided */
+  /* 5. Check if any files were provided */
   if (
     !payload.orderBuffer &&
     !payload.incomeBuffer &&
@@ -92,6 +221,7 @@ export async function importFilesAction(
         success: false,
         status: "error",
         data: [],
+        toUpdate: [],
         errors: [],
         warnings: [],
         summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 },
@@ -113,16 +243,16 @@ export async function importFilesAction(
         summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 },
         hppMap: new Map(),
       },
-  grosir: {
-    success: false,
-    status: "error",
-    data: [],
-    errors: [],
-    warnings: [],
-    summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 },
-    grosirMap: new Map(),
-  },
-  stockMovements: [],
+      grosir: {
+        success: false,
+        status: "error",
+        data: [],
+        errors: [],
+        warnings: [],
+        summary: { totalRows: 0, parsedRows: 0, validRows: 0, errorRows: 0 },
+        grosirMap: new Map(),
+      },
+      stockMovements: [],
       saldoSyncResult: null,
       incomeImported: false,
       adjustmentsImported: false,
@@ -132,18 +262,28 @@ export async function importFilesAction(
     };
   }
 
-  /* 4. Run orchestrator */
+  /* 6. Fetch existing income for idempotency (PRD 3.10 rules 2-4) */
+  if (needsIncomeFetch) {
+    try {
+      payload.existingIncome = await fetchExistingIncome(client);
+    } catch (err) {
+      console.warn("Gagal fetch income untuk check duplikat:", err);
+      // Continue anyway but may create duplicates on re-import
+    }
+  }
+
+  /* 7. Run orchestrator */
   const orchestrator = new ImportOrchestrator(client);
   const result = await orchestrator.run(payload);
 
   /* Post-import triggers: sync income and recalc profit if needed */
   if (result.transactionCommitted) {
-    // Trigger income sync if income was imported
-    if (result.incomeImported) {
+    // Trigger income sync if income was imported (either INSERT or UPDATE)
+    if (result.incomeImported || result.income.toUpdate?.length > 0) {
       (async () => {
         try {
           const clientTrigger = createSupabaseClient();
-          // Get storeId from settings (first row)
+          // Get store_id from settings (first row)
           const { data: setting, error } = await clientTrigger
             .from("settings")
             .select("store_id")
@@ -172,7 +312,7 @@ export async function importFilesAction(
       (async () => {
         try {
           const clientTrigger = createSupabaseClient();
-          // Get storeId from settings (first row)
+          // Get store_id from settings (first row)
           const { data: setting, error } = await clientTrigger
             .from("settings")
             .select("store_id")
