@@ -309,7 +309,7 @@ export default function UploadForm() {
     };
 
       setState({
-        step: "preview",
+        step: "result",
         preview: state.preview,
         result: errorOrcResult,
         isImporting: false,
