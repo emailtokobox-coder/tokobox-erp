@@ -188,6 +188,21 @@ export default function PreviewTable({ title, preview, showFull = true }: Previe
           <p className="text-sm text-muted-foreground italic">Tidak ada data untuk ditampilkan</p>
         )}
 
+        {/* Show detailed errors when preview exists but no data is displayable */}
+        {(headers.length === 0 || sampleRows.length === 0) && preview.errors.length > 0 && !preview.typeMessage && (
+          <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30 p-4 mt-4">
+            <p className="font-semibold text-yellow-700 mb-2">⚠️ Hasil Parsing Tampil Tidak Lengkap</p>
+            <ul className="space-y-1 text-sm">
+              {preview.errors.slice(0, 5).map((err, i) => (
+                <li key={i} className="text-yellow-600">• {err}</li>
+              ))}
+              {preview.errors.length > 5 && (
+                <li className="text-yellow-600">dan {preview.errors.length - 5} kesalahan lainnya</li>
+              )}
+            </ul>
+          </Card>
+        )}
+
         {/* Errors & Warnings */}
         <ErrorWarningList preview={preview} />
       </CardContent>

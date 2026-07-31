@@ -84,15 +84,15 @@ export async function signUpAction(formData: FormData): Promise<void | { error: 
 
 export async function getSessionAction() {
   const supabase = await createServerClient();
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (error || !session) {
+  if (error || !user) {
     return null;
   }
 
   return {
-    id: session.user.id,
-    email: session.user.email || "",
+    id: user.id,
+    email: user.email || ""
   };
 }
 
@@ -100,16 +100,16 @@ export async function getSessionAction() {
 
 export async function getCurrentUserAction() {
   const supabase = await createServerClient();
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (error || !session) {
+  if (error || !user) {
     return null;
   }
 
   return {
-    id: session.user.id,
-    email: session.user.email || "",
-    avatarInitials: getAvatarInitials(session.user.email || ""),
+    id: user.id,
+    email: user.email || "",
+    avatarInitials: getAvatarInitials(user.email || "")
   };
 }
 
