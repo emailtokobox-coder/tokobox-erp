@@ -73,13 +73,19 @@ function wrapError(err: PostgrestError | Error, context: string): DatabaseError 
 
 /**
  * Apply transaction headers to a PostgREST query builder.
- * In Supabase JS v2, use withOptions() instead of deprecated .headers().
+ * In Supabase JS v2 (postgrest-js), use the fluent .setHeader() method
+ * instead of the removed .headers() chain.
  */
 function applyTxHeaders<T>(
   builder: T,
   transactionId?: string
 ): T {
-  return (builder as any).withOptions({ headers: txHeaders(transactionId) }) as T;
+  const headers = txHeaders(transactionId);
+  const result = builder as any;
+  for (const [name, value] of Object.entries(headers)) {
+    result.setHeader(name, value);
+  }
+  return result;
 }
 
 /* ─── DbTransaction Class ─── */
