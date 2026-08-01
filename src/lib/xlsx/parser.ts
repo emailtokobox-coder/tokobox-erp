@@ -64,7 +64,23 @@ function sheetToRows(worksheet: XLSX.WorkSheet): string[][] {
   return data.map((row) => row.map((cell) => String(cell ?? "").trim()));
 }
 
-/** Get raw cell value as string */
+/**
+ * Check if required columns are present.
+ * Uses resolveColumn (Tier 1 exact match + Tier 2 fixed-offset fallback)
+ * so columns found via fallback offset are NOT reported as missing.
+ * A sentinel offset of -1 is used: if resolveColumn returns -1,
+ * the column truly doesn't exist anywhere.
+ */
+function checkMissingHeaders(colMap: ColumnMap, required: string[]): string[] {
+  return required.filter((name) => {
+    const idx = resolveColumn(colMap, -1, [name]);
+    return idx === -1;
+  });
+}
+
+/**
+ * Get raw cell value as string
+ */
 function getCell(row: string[], index: number): string {
   return row[index] ?? "";
 }
@@ -133,10 +149,8 @@ export function parseOrderAll(
   const colMap = buildColumnMap(headers);
   const data: OrderAllRow[] = [];
 
-  /* Tier 1 header validation */
-  const missingHeaders = ORDER_ALL_REQUIRED_COLUMNS.filter(
-    (h) => colMap[h] === undefined
-  );
+/* Tier 1 header validation (Tier 2 fallback supported via resolveColumn) */
+const missingHeaders = checkMissingHeaders(colMap, ORDER_ALL_REQUIRED_COLUMNS);
   if (missingHeaders.length > 0) {
     errors.push({
       row: 1,
@@ -285,13 +299,11 @@ export function parseIncome(
   const colMap = buildColumnMap(headers);
   const data: IncomeRow[] = [];
 
-  const missingHeaders = INCOME_REQUIRED_COLUMNS.filter(
-    (h) => colMap[h] === undefined
-  );
-  if (missingHeaders.length > 0) {
-    errors.push({
-      row: 6,
-      field: "headers",
+const missingHeaders = checkMissingHeaders(colMap, INCOME_REQUIRED_COLUMNS);
+if (missingHeaders.length > 0) {
+  errors.push({
+    row: 6,
+    field: "headers",
       message: `Kolom wajib tidak ditemukan: ${missingHeaders.join(", ")}`,
     });
   }
@@ -375,13 +387,11 @@ export function parseAdjustment(
   const colMap = buildColumnMap(headers);
   const data: AdjustmentRow[] = [];
 
-  const missingHeaders = ADJUSTMENT_REQUIRED_COLUMNS.filter(
-    (h) => colMap[h] === undefined
-  );
-  if (missingHeaders.length > 0) {
-    errors.push({
-      row: 18,
-      field: "headers",
+const missingHeaders = checkMissingHeaders(colMap, ADJUSTMENT_REQUIRED_COLUMNS);
+if (missingHeaders.length > 0) {
+  errors.push({
+    row: 18,
+    field: "headers",
       message: `Kolom wajib tidak ditemukan: ${missingHeaders.join(", ")}`,
     });
   }
@@ -451,18 +461,16 @@ export function parseHpp(
   const colMap = buildColumnMap(headers);
   const data: HppRow[] = [];
 
-  const missingHeaders = HPP_REQUIRED_COLUMNS.filter(
-    (h) => colMap[h] === undefined
-  );
-  if (missingHeaders.length > 0) {
-    errors.push({
-      row: 1,
-      field: "headers",
-      message: `Kolom wajib tidak ditemukan: ${missingHeaders.join(", ")}`,
-    });
-  }
+const missingHeaders = checkMissingHeaders(colMap, HPP_REQUIRED_COLUMNS);
+if (missingHeaders.length > 0) {
+  errors.push({
+    row: 1,
+    field: "headers",
+    message: `Kolom wajib tidak ditemukan: ${missingHeaders.join(", ")}`,
+  });
+}
 
-  const skuIdx = resolveColumn(colMap, 0, ["sku"]);
+const skuIdx = resolveColumn(colMap, 0, ["sku"]);
   const hppIdx = resolveColumn(colMap, 1, ["hpp / modal", "modal", "hpp"]);
   const namaIdx = colMap["nama produk"];
 
