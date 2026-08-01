@@ -553,9 +553,7 @@ export function parseGrosir(
   const colMap = buildColumnMap(headers);
   const data: GrosirRow[] = [];
 
-  const missingHeaders = GROSIR_REQUIRED_COLUMNS.filter(
-    (h) => colMap[h] === undefined
-  );
+  const missingHeaders = checkMissingHeaders(colMap, GROSIR_REQUIRED_COLUMNS);
   if (missingHeaders.length > 0) {
     errors.push({
       row: 1,
