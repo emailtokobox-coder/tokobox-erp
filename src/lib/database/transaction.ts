@@ -73,14 +73,13 @@ function wrapError(err: PostgrestError | Error, context: string): DatabaseError 
 
 /**
  * Apply transaction headers to a PostgREST query builder.
- * The `.headers()` method on Supabase's builder is protected in types
- * but functional at runtime — we cast to `any` to bypass TS restriction.
+ * In Supabase JS v2, use withOptions() instead of deprecated .headers().
  */
 function applyTxHeaders<T>(
   builder: T,
   transactionId?: string
 ): T {
-  return (builder as any).headers(txHeaders(transactionId)) as T;
+  return (builder as any).withOptions({ headers: txHeaders(transactionId) }) as T;
 }
 
 /* ─── DbTransaction Class ─── */
@@ -106,10 +105,8 @@ export class DbTransaction {
     }
 
     try {
-      // Start transaction via RPC with tx header
-      const { error } = await (this.client as any)
-        .rpc("noop", {})
-        .headers(txHeaders());
+      // Start transaction via RPC with tx header in options (Supabase JS v2)
+      const { error } = await (this.client as any).rpc("noop", {}, { headers: txHeaders() });
 
       if (error) {
         return { success: false, error: `Gagal memulai transaksi: ${error.message}` };
@@ -135,9 +132,8 @@ export class DbTransaction {
     }
 
     try {
-      const { error } = await (this.client as any)
-        .rpc("noop", {})
-        .headers(txCommitHeaders(this.transactionId));
+      // Commit via RPC with commit header in options (Supabase JS v2)
+      const { error } = await (this.client as any).rpc("noop", {}, { headers: txCommitHeaders(this.transactionId) });
 
       if (error) {
         return { success: false, error: `Gagal commit transaksi: ${error.message}` };
@@ -163,9 +159,8 @@ export class DbTransaction {
     }
 
     try {
-      const { error } = await (this.client as any)
-        .rpc("noop", {})
-        .headers(txRollbackHeaders(this.transactionId));
+      // Rollback via RPC with rollback header in options (Supabase JS v2)
+      const { error } = await (this.client as any).rpc("noop", {}, { headers: txRollbackHeaders(this.transactionId) });
 
       if (error) {
         return { success: false, error: `Gagal rollback transaksi: ${error.message}` };
@@ -630,9 +625,8 @@ export class DbTransaction {
   private async autoRollback(): Promise<void> {
     if (this.active && this.transactionId) {
       try {
-        await (this.client as any)
-          .rpc("noop", {})
-          .headers(txRollbackHeaders(this.transactionId));
+        // Use v2 compatible RPC call with headers option
+        await (this.client as any).rpc("noop", {}, { headers: txRollbackHeaders(this.transactionId) });
       } catch {
         // Best-effort rollback
       }
