@@ -12,6 +12,9 @@ import { SupplierDetail } from "@/features/supplier"
 import { Skeleton } from "@/components/ui/skeleton"
 import { notFound } from "next/navigation"
 
+/* ─── Force dynamic rendering — page uses server actions with Supabase ─── */
+export const dynamic = "force-dynamic"
+
 /* ─── Page ─── */
 
 export default async function SupplierDetailPage({

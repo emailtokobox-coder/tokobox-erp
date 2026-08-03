@@ -15,6 +15,9 @@ import { Suspense } from "react"
 import { getUnifiedOrdersAction } from "@/features/status-tracker/actions"
 import StatusKanban from "@/features/status-tracker/components/StatusKanban"
 
+/* ─── Force dynamic rendering — page uses server actions with Supabase ─── */
+export const dynamic = "force-dynamic"
+
 /* ─── Loading Skeleton ─── */
 
 function TrackerSkeleton() {

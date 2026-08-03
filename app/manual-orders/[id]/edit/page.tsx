@@ -12,6 +12,9 @@ import { redirect } from "next/navigation";
 import { getManualOrderDetailAction } from "@/features/manual-orders/actions";
 import ManualOrderForm from "@/features/manual-orders/components/forms/ManualOrderForm";
 
+/* ─── Force dynamic rendering — page uses server actions with Supabase ─── */
+export const dynamic = "force-dynamic";
+
 /* ─── Loading Skeleton ─── */
 
 function FormSkeleton() {

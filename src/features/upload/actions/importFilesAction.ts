@@ -11,7 +11,8 @@
 
 "use server";
 
-import { createSupabaseClient } from "@/lib/supabase/client";
+import { createServerClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { ImportOrchestrator } from "../services/ImportOrchestrator";
 import type { ImportPayload, OrchestratorResult } from "../services/ImportOrchestrator";
 import type { IncomeRow } from "../types";
@@ -40,22 +41,22 @@ function validateFileSize(file: File, fieldName: string): { error?: string } {
 /* ─── Helper: Fetch existing income for idempotency check (PRD 3.10) ─── */
 
 async function fetchExistingIncome(
-  client: ReturnType<typeof createSupabaseClient>,
+  client: SupabaseClient,
 ): Promise<Map<string, IncomeRow>> {
   const { data } = await client
     .from("incomes")
     .select("no_pesanan, income_aktual, tanggal_dana_dilepaskan");
   if (!data || data.length === 0) return new Map();
 
-  return new Map(
-    data.map((r) => [
-      r.no_pesanan,
+  return new Map<string, IncomeRow>(
+    (data as Array<{ no_pesanan: string; income_aktual: number; tanggal_dana_dilepaskan: string | null }>).map((r) => [
+      String(r["no_pesanan"]),
       {
-        noPesanan: r.no_pesanan,
+        noPesanan: String(r["no_pesanan"]),
         noPengajuan: "",
         waktuPesananDibuat: "",
         metodePembayaran: "",
-        tanggalDanaDilepaskan: r.tanggal_dana_dilepaskan ?? "",
+        tanggalDanaDilepaskan: String(r["tanggal_dana_dilepaskan"] ?? ""),
         hargaAsliProduk: 0,
         totalDiskonProduk: 0,
         refundBuyer: 0,
@@ -67,8 +68,8 @@ async function fetchExistingIncome(
         biayaAdministrasi: 0,
         biayaLayanan: 0,
         biayaProsesPesanan: 0,
-        incomeAktual: r.income_aktual ?? 0,
-      },
+        incomeAktual: r["income_aktual"] ?? 0,
+      } as IncomeRow,
     ]),
   );
 }
@@ -85,7 +86,7 @@ export async function importFilesAction(
   formData: FormData,
 ): Promise<OrchestratorResult> {
   /* 1. Create Supabase client */
-  const client = createSupabaseClient();
+  const client = await createServerClient();
   console.log('[DEBUG] importFilesAction: Supabase client created');
 console.log('[DEBUG] importFilesAction: Supabase client created');
 
@@ -296,7 +297,7 @@ console.log('[DEBUG] importFilesAction: Supabase client created');
     if (result.incomeImported || result.income.toUpdate?.length > 0) {
       (async () => {
         try {
-          const clientTrigger = createSupabaseClient();
+          const clientTrigger = await createServerClient();
           // Get store_id from settings (first row)
           const { data: setting, error } = await clientTrigger
             .from("settings")
@@ -325,7 +326,7 @@ console.log('[DEBUG] importFilesAction: Supabase client created');
     if (result.adjustmentsImported || result.hppImported) {
       (async () => {
         try {
-          const clientTrigger = createSupabaseClient();
+          const clientTrigger = await createServerClient();
           // Get store_id from settings (first row)
           const { data: setting, error } = await clientTrigger
             .from("settings")

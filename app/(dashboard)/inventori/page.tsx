@@ -20,6 +20,9 @@ import { getHppListAction, getStockSaldoAction, getStockMovementsAction, getLast
 import { HppTable, StockSaldoTable, StockMovementTable } from "@/features/inventory"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 
+/* ─── Force dynamic rendering — page uses server actions with Supabase ─── */
+export const dynamic = "force-dynamic"
+
 /* ─── Page ─── */
 
 export default async function InventoryPage() {

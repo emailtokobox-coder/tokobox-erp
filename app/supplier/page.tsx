@@ -14,6 +14,9 @@ import { getSuppliersAction } from "@/features/supplier/actions"
 import { SupplierTable } from "@/features/supplier"
 import { Skeleton } from "@/components/ui/skeleton"
 
+/* ─── Force dynamic rendering — page uses server actions with Supabase ─── */
+export const dynamic = "force-dynamic"
+
 /* ─── Page ─── */
 
 export default async function SupplierPage() {

@@ -10,6 +10,9 @@ import { Suspense } from "react";
 import { getManualOrderDetailAction } from "@/features/manual-orders/actions";
 import ManualOrderDetail from "@/features/manual-orders/components/dialogs/ManualOrderDetail";
 
+/* ─── Force dynamic rendering — page uses server actions with Supabase ─── */
+export const dynamic = "force-dynamic";
+
 /* ─── Loading Skeleton ─── */
 
 function DetailSkeleton() {

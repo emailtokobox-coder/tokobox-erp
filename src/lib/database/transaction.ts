@@ -582,7 +582,7 @@ export class DbTransaction {
       );
 
       if (error) {
-        throw wrapError(error, "Gagal insert stock movements");
+        throw wrapError(error, `Gagal insert stock movements: ${error.message}`);
       }
 
       return { success: true, data: (data as unknown) as StockMovementRow[] };

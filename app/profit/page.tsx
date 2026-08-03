@@ -17,6 +17,9 @@ import { getProfitAction } from "@/features/finance/actions"
 import { ProfitChart } from "@/features/finance"
 import { Skeleton } from "@/components/ui/skeleton"
 
+/* ─── Force dynamic rendering — page uses server actions with Supabase ─── */
+export const dynamic = "force-dynamic"
+
 /* ─── Page ─── */
 
 export default async function ProfitPage() {

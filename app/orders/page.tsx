@@ -10,6 +10,9 @@ import { Suspense } from "react";
 import { getOrdersAction } from "@/features/orders/actions";
 import OrderListTable from "@/features/orders/components/OrderListTable";
 
+/* ─── Force dynamic rendering — page uses server actions with Supabase ─── */
+export const dynamic = "force-dynamic";
+
 /* ─── Loading Skeleton ─── */
 
 function OrdersSkeleton() {

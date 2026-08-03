@@ -16,6 +16,9 @@ import { getIncomeAction } from "@/features/finance/actions"
 import { IncomeTable } from "@/features/finance"
 import { Skeleton } from "@/components/ui/skeleton"
 
+/* ─── Force dynamic rendering — page uses server actions with Supabase ─── */
+export const dynamic = "force-dynamic"
+
 /* ─── Page ─── */
 
 export default async function IncomePage() {

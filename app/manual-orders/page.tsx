@@ -13,6 +13,9 @@ import { Suspense } from "react";
 import { getManualOrdersAction } from "@/features/manual-orders/actions";
 import { ManualOrdersTable } from "@/features/manual-orders/components";
 
+/* ─── Force dynamic rendering — page uses server actions with Supabase ─── */
+export const dynamic = "force-dynamic";
+
 /* ─── Loading Skeleton ─── */
 
 function ManualOrdersSkeleton() {

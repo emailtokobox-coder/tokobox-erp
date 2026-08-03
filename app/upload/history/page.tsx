@@ -10,6 +10,9 @@ import { Suspense } from "react";
 import { getImportHistoryAction } from "@/features/upload/actions/getImportHistoryAction";
 import UploadHistoryTable from "@/features/upload/components/UploadHistoryTable";
 
+/* ─── Force dynamic rendering — page uses server actions with Supabase ─── */
+export const dynamic = "force-dynamic";
+
 /* ─── Loading Skeleton ─── */
 
 function HistorySkeleton() {
