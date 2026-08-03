@@ -577,7 +577,7 @@ export class DbTransaction {
       }));
 
       const { data, error } = await applyTxHeaders(
-        this.client.from("stock_movements").insert(payload),
+        this.client.from("stockMovements").insert(payload),
         this.transactionId || undefined
       );
 
