@@ -274,6 +274,13 @@ const INCOME_REQUIRED_COLUMNS = [
  "pendapatan sebenarnya",
 ];
 
+const KNOWN_INCOME_HEADERS = [
+ "no. pesanan", "no pesanan", "no pesanann", "no.pesanan", "no_pesanan", "nomor pesanan",
+ "total penghasilan", "total pendapatan", "pendapatan", "income", "pendapatan sebenarnya", "income aktual",
+ "no. pengajuan", "waktu pesanan dibuat", "metode pembayaran",
+ "tanggal dana dilepaskan", "harga asli produk",
+];
+
 export function parseIncome(
  worksheet: XLSX.WorkSheet,
  fileName: string
@@ -282,38 +289,51 @@ export function parseIncome(
  const warnings: ParseWarning[] = [];
  const rows = sheetToRows(worksheet);
 
- if (rows.length < 6) {
-  return {
-   data: [],
-   errors: [{ row: 0, field: "file", message: "File Income terlalu pendek" }],
-   warnings: [],
-   metadata: {
-    fileName,
-    fileType: "INCOME",
-    sheetName: "Income",
-    totalRows: 0,
-    parsedRows: 0,
-    skippedRows: 0,
-    headers: [],
-   },
-  };
+ /* Auto-detect header row by scanning for known column names */
+ let headerRowIndex = -1;
+ for (let i = 0; i < rows.length; i++) {
+  const row = rows[i];
+  const matched = row.filter((cell) => {
+   const norm = normalizeHeader(cell);
+   return KNOWN_INCOME_HEADERS.some((h) => normalizeHeader(h).includes(norm) || norm.includes(normalizeHeader(h)));
+  });
+  if (matched.length >= 3) {
+   headerRowIndex = i;
+   break;
+  }
  }
 
- const headers = rows[5]; /* row 6 (0-based index 5) */
+ if (headerRowIndex === -1) {
+  /* Fallback to row 6 (default Shopee export format) */
+  if (rows.length < 6) {
+   return {
+    data: [],
+    errors: [{ row: 0, field: "file", message: "File Income terlalu pendek" }],
+    warnings: [],
+    metadata: {
+     fileName,
+     fileType: "INCOME",
+     sheetName: "Income",
+     totalRows: 0,
+     parsedRows: 0,
+     skippedRows: 0,
+     headers: [],
+    },
+   };
+  }
+  headerRowIndex = 5;
+ }
+
+ const headers = rows[headerRowIndex];
  const colMap = buildColumnMap(headers);
  const data: IncomeRow[] = [];
 
  let missingHeaders = checkMissingHeaders(colMap, INCOME_REQUIRED_COLUMNS);
- /* Fallback header patterns for Shopee income exports */
+ /* Relaxed matching fallback */
  if (missingHeaders.length > 0) {
-  const altMap = buildColumnMap(headers.map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, "").trim()));
-  const altColMap: Record<string, string> = {};
-  for (const [k, v] of Object.entries(altMap)) {
-   altColMap[k] = headers[v] ?? "";
-  }
   const relaxedMissing = missingHeaders.filter((name) => {
    const relaxed = name.replace(/[^a-z0-9]/g, "").trim();
-   return !Object.values(altColMap).some((h) => h.replace(/[^a-z0-9]/g, "").trim().includes(relaxed));
+   return !Object.values(colMap).some((h) => String(h).replace(/[^a-z0-9]/g, "").trim().includes(relaxed));
   });
   if (relaxedMissing.length === 0) {
    missingHeaders = [];
@@ -322,7 +342,7 @@ export function parseIncome(
 
  if (missingHeaders.length > 0) {
   errors.push({
-   row: 6,
+   row: headerRowIndex + 1,
    field: "headers",
    message: `Kolom wajib tidak ditemukan: ${missingHeaders.join(", ")}. Header terdeteksi: ${headers.slice(0, 10).join(", ")}${headers.length > 10 ? "..." : ""}`,
   });
@@ -346,7 +366,8 @@ export function parseIncome(
  const prosesPesananIdx = resolveColumn(colMap, 25, ["biaya proses pesanan", "biaya proses", "order processing fee"]);
  const incomeAktualIdx = resolveColumn(colMap, 30, ["total penghasilan", "total pendapatan", "pendapatan", "income", "pendapatan sebenarnya", "income aktual"]);
 
- for (let i = 6; i < rows.length; i++) {
+ const dataStartRow = headerRowIndex + 1;
+ for (let i = dataStartRow; i < rows.length; i++) {
   const row = rows[i];
 
   if (row.every((cell) => cell === "")) continue;
@@ -380,9 +401,9 @@ export function parseIncome(
    fileName,
    fileType: "INCOME",
    sheetName: "Income",
-   totalRows: rows.length - 6,
+   totalRows: rows.length - dataStartRow,
    parsedRows: data.length,
-   skippedRows: rows.length - 6 - data.length,
+   skippedRows: rows.length - dataStartRow - data.length,
    headers,
   },
  };
