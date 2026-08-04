@@ -68,13 +68,13 @@ const QUICK_ACTIONS = [
   {
     label: "Inventori",
     description: "HPP, stok, dan resolvers",
-    href: "/inventory",
+    href: "/inventori",
     icon: Warehouse,
   },
   {
     label: "Keuangan",
     description: "Income dan profit report",
-    href: "/finance",
+    href: "/income",
     icon: Wallet,
   },
   {

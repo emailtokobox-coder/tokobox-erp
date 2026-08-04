@@ -94,9 +94,15 @@ export class DbTransaction {
   private client: SupabaseClient;
   private transactionId: string | null = null;
   private active: boolean = false;
+  private storeId: string = "";
 
-  constructor(client: SupabaseClient) {
+  constructor(client: SupabaseClient, storeId?: string) {
     this.client = client;
+    if (storeId) this.storeId = storeId;
+  }
+
+  setStoreId(id: string) {
+    this.storeId = id;
   }
 
   /* ─── Transaction Lifecycle ─── */
@@ -217,12 +223,12 @@ export class DbTransaction {
       }));
 
       const { data, error } = await applyTxHeaders(
-        this.client.from("orders").insert(payload),
+        this.client.from("orderHeaders").insert(payload),
         this.transactionId || undefined
       );
 
       if (error) {
-        throw wrapError(error, "Gagal insert orders");
+        throw wrapError(error, "Gagal insert orderHeaders");
       }
 
       return { success: true, data: (data as unknown) as OrderHeaderProcessed[] };
@@ -232,14 +238,14 @@ export class DbTransaction {
         success: false,
         error: wrapError(
           err instanceof Error ? err : new Error(String(err)),
-          "Insert orders"
+          "Insert orderHeaders"
         ).message,
       };
     }
   }
 
   /**
-   * Insert order items into the `order_items` table.
+   * Insert order items into the `orderItems` table.
    */
   async insertOrderItems(
     items: OrderItemProcessed[]
@@ -271,12 +277,12 @@ export class DbTransaction {
       }));
 
       const { data, error } = await applyTxHeaders(
-        this.client.from("order_items").insert(payload),
+        this.client.from("orderItems").insert(payload),
         this.transactionId || undefined
       );
 
       if (error) {
-        throw wrapError(error, "Gagal insert order_items");
+        throw wrapError(error, "Gagal insert orderItems");
       }
 
       return { success: true, data: (data as unknown) as OrderItemProcessed[] };
@@ -286,14 +292,14 @@ export class DbTransaction {
         success: false,
         error: wrapError(
           err instanceof Error ? err : new Error(String(err)),
-          "Insert order_items"
+          "Insert orderItems"
         ).message,
       };
     }
   }
 
   /**
-   * Insert income rows into the `income` table.
+   * Insert income rows into the `incomes` table.
    */
   async insertIncome(
     rows: IncomeRow[]
@@ -328,12 +334,12 @@ export class DbTransaction {
       }));
 
       const { data, error } = await applyTxHeaders(
-        this.client.from("income").insert(payload),
+        this.client.from("incomes").insert(payload),
         this.transactionId || undefined
       );
 
       if (error) {
-        throw wrapError(error, "Gagal insert income");
+        throw wrapError(error, "Gagal insert incomes");
       }
 
       return { success: true, data: (data as unknown) as IncomeRow[] };
@@ -372,7 +378,7 @@ export class DbTransaction {
         const { new: newRow } = update;
         const result = await applyTxHeaders(
           this.client
-            .from("income")
+            .from("incomes")
             .update({
               no_pengajuan: newRow.noPengajuan,
               waktu_pesanan_dibuat: newRow.waktuPesananDibuat,
@@ -480,7 +486,7 @@ export class DbTransaction {
       }));
 
       const { data, error } = await applyTxHeaders(
-        this.client.from("hpp").insert(payload),
+        this.client.from("hppSkus").insert(payload),
         this.transactionId || undefined
       );
 
@@ -565,7 +571,7 @@ export class DbTransaction {
 
     try {
       const payload = rows.map((row) => ({
-        store_id: "default",
+        store_id: this.storeId || "default",
         base_product: row.baseProduct,
         tipe: row.tipe,
         tanggal: row.tanggal,

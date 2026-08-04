@@ -47,6 +47,7 @@ export interface ImportPayload {
   hppBuffer?: ArrayBuffer
   grosirBuffer?: ArrayBuffer
   existingIncome?: Map<string, IncomeRow>
+  storeId?: string
 }
 
 /* ─── Orchestrator Result ─── */
@@ -60,7 +61,6 @@ export interface OrchestratorResult {
   grosir: ImportResult<GrosirRow> & { grosirMap: Map<string, GrosirRow[]> }
   stockMovements: StockMovementRow[]
   saldoSyncResult: SaldoSyncResult | null
-  /* Iter 47 signals: caller should trigger these after this result returns */
   incomeImported: boolean
   adjustmentsImported: boolean
   hppImported: boolean
@@ -206,7 +206,7 @@ export class ImportOrchestrator {
 
     /* ─── Step 3: DB write within transaction ─── */
 
-    const transaction = new DbTransaction(this.client)
+    const transaction = new DbTransaction(this.client, payload.storeId)
     const txBegin = await transaction.begin(); console.log('[DEBUG] Transaction begin:', txBegin.success ? '✓' : '✗', txBegin.error)
 
     if (!txBegin.success) {

@@ -88,7 +88,6 @@ export async function importFilesAction(
   /* 1. Create Supabase client */
   const client = await createServerClient();
   console.log('[DEBUG] importFilesAction: Supabase client created');
-console.log('[DEBUG] importFilesAction: Supabase client created');
 
   /* 2. Extract files from FormData */
   const orderFile = formData.get("orderFile") as File | null;
@@ -277,6 +276,16 @@ console.log('[DEBUG] importFilesAction: Supabase client created');
       console.warn("Gagal fetch income untuk check duplikat:", err);
       // Continue anyway but may create duplicates on re-import
     }
+  }
+
+  /* Get store_id from authenticated user */
+  try {
+    const { data: { user } } = await client.auth.getUser();
+    if (user?.id) {
+      payload.storeId = user.id;
+    }
+  } catch {
+    // fallback: no storeId set, transaction will use "default"
   }
 
   /* 7. Run orchestrator */
