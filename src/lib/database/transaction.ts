@@ -66,9 +66,9 @@ function txRollbackHeaders(transactionId: string): Record<string, string> {
 /* ─── Error Handling ─── */
 
 function wrapError(err: PostgrestError | Error, context: string): DatabaseError {
-  if (err instanceof DatabaseError) return err;
-  const message = `${context}: ${err instanceof Error ? err.message : String(err)}`;
-  return new DatabaseError(message, { originalError: err });
+ if (err instanceof DatabaseError) return err;
+ const message = `${context}: ${err instanceof Error ? err.message : (err as any)?.message || String(err)}`;
+ return new DatabaseError(message, { originalError: err });
 }
 
 /**
