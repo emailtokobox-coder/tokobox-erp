@@ -266,147 +266,123 @@ const missingHeaders = checkMissingHeaders(colMap, ORDER_ALL_REQUIRED_COLUMNS);
 /* ─── Income Parser (PRD 3.4) ─── */
 
 const INCOME_REQUIRED_COLUMNS = [
- "no. pesanan",
- "total penghasilan",
- "pendapatan",
- "income",
- "total pendapatan",
- "pendapatan sebenarnya",
+  "no. pesanan", "no pesanan", "no_pesanan", "nomor pesanan",
+  "total penghasilan", "total pendapatan", "pendapatan", "income", "pendapatan sebenarnya", "income aktual",
 ];
 
-const KNOWN_INCOME_HEADERS = [
- "no. pesanan", "no pesanan", "no pesanann", "no.pesanan", "no_pesanan", "nomor pesanan",
- "total penghasilan", "total pendapatan", "pendapatan", "income", "pendapatan sebenarnya", "income aktual",
- "no. pengajuan", "waktu pesanan dibuat", "metode pembayaran",
- "tanggal dana dilepaskan", "harga asli produk",
-];
+function hasRequiredIncomeHeader(row: string[]): boolean {
+  const lower = row.map((c) => normalizeHeader(c));
+  const hasNoPesanan = lower.some((c) => /^no\.?\s*pesanan$|^nomor\s*pesanan$|^no_pesanan$/.test(c));
+  const hasIncome = lower.some((c) => /^total\s*penghasilan$|^total\s*pendapatan$|^pendapatan$|^income\s*aktual$|^pendapatan\s*sebenarnya$|^income$/.test(c));
+  return hasNoPesanan && hasIncome;
+}
 
 export function parseIncome(
- worksheet: XLSX.WorkSheet,
- fileName: string
+  worksheet: XLSX.WorkSheet,
+  fileName: string
 ): ParseResult<IncomeRow> {
- const errors: ParseError[] = [];
- const warnings: ParseWarning[] = [];
- const rows = sheetToRows(worksheet);
+  const errors: ParseError[] = [];
+  const warnings: ParseWarning[] = [];
+  const rows = sheetToRows(worksheet);
 
- /* Auto-detect header row by scanning for known column names */
- let headerRowIndex = -1;
- for (let i = 0; i < rows.length; i++) {
-  const row = rows[i];
-  const matched = row.filter((cell) => {
-   const norm = normalizeHeader(cell);
-   return KNOWN_INCOME_HEADERS.some((h) => normalizeHeader(h).includes(norm) || norm.includes(normalizeHeader(h)));
-  });
-  if (matched.length >= 3) {
-   headerRowIndex = i;
-   break;
-  }
- }
-
- if (headerRowIndex === -1) {
-  /* Fallback to row 6 (default Shopee export format) */
   if (rows.length < 6) {
-   return {
-    data: [],
-    errors: [{ row: 0, field: "file", message: "File Income terlalu pendek" }],
-    warnings: [],
+    return {
+      data: [],
+      errors: [{ row: 0, field: "file", message: "File Income terlalu pendek" }],
+      warnings: [],
+      metadata: {
+        fileName,
+        fileType: "INCOME",
+        sheetName: "Income",
+        totalRows: 0,
+        parsedRows: 0,
+        skippedRows: 0,
+        headers: [],
+      },
+    };
+  }
+
+  /* Auto-detect: first try row 6 (standard Shopee), fallback scan */
+  let headerRowIndex = 5; // default row 6 (0-indexed 5)
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    if (hasRequiredIncomeHeader(rows[i])) {
+      headerRowIndex = i;
+      break;
+    }
+  }
+
+  const headers = rows[headerRowIndex];
+  const colMap = buildColumnMap(headers);
+  const data: IncomeRow[] = [];
+
+  let missingHeaders = checkMissingHeaders(colMap, INCOME_REQUIRED_COLUMNS);
+  if (missingHeaders.length > 0) {
+    errors.push({
+      row: headerRowIndex + 1,
+      field: "headers",
+      message: `Kolom wajib tidak ditemukan: ${missingHeaders.join(", ")}. Header terdeteksi: ${headers.slice(0, 10).join(", ")}${headers.length > 10 ? "..." : ""}`,
+    });
+  }
+
+  const noPesananIdx = resolveColumn(colMap, 1, ["no. pesanan", "no pesanan", "no pesanann", "no.pesanan", "no_pesanan", "nomor pesanan"]);
+  const noPengajuanIdx = resolveColumn(colMap, 2, ["no. pengajuan", "no pengajuan"]);
+  const waktuDibuatIdx = resolveColumn(colMap, 4, ["waktu pesanan dibuat", "waktu dibuat", "tanggal pesanan"]);
+  const metodeBayarIdx = resolveColumn(colMap, 5, ["metode pembayaran pembeli", "metode pembayaran", "payment method"]);
+  const tanggalDanaIdx = resolveColumn(colMap, 6, ["tanggal dana dilepaskan", "tanggal dana", "release date"]);
+  const hargaAsliIdx = resolveColumn(colMap, 7, ["harga asli produk", "harga asli", "original price"]);
+  const diskonIdx = resolveColumn(colMap, 8, ["total diskon produk", "total diskon", "diskon"]);
+  const refundIdx = resolveColumn(colMap, 9, ["jumlah pengembalian dana ke pembeli", "refund buyer", "pengembalian dana", "refund"]);
+  const ongkirPembeliIdx = resolveColumn(colMap, 15, ["ongkir dibayar pembeli", "ongkos kirim dibayar pembeli", "shipping paid by buyer"]);
+  const gratisOngkirIdx = resolveColumn(colMap, 17, ["gratis ongkir dari shopee", "gratis ongkir", "free shipping"]);
+  const ongkirDiteruskanIdx = resolveColumn(colMap, 18, ["ongkir yang diteruskan oleh shopee ke jasa kirim", "ongkir diteruskan ke jasa kirim", "shipping fee forwarded"]);
+  const ongkirPengembalianIdx = resolveColumn(colMap, 19, ["ongkos kirim pengembalian barang", "ongkir pengembalian", "return shipping"]);
+  const komisiAmsIdx = resolveColumn(colMap, 22, ["biaya komisi ams", "komisi ams", "commission"]);
+  const administrasiIdx = resolveColumn(colMap, 23, ["biaya administrasi", "administrasi", "admin fee"]);
+  const layananIdx = resolveColumn(colMap, 24, ["biaya layanan", "biaya service", "service fee"]);
+  const prosesPesananIdx = resolveColumn(colMap, 25, ["biaya proses pesanan", "biaya proses", "order processing fee"]);
+  const incomeAktualIdx = resolveColumn(colMap, 30, ["total penghasilan", "total pendapatan", "pendapatan", "income", "pendapatan sebenarnya", "income aktual"]);
+
+  const dataStartRow = headerRowIndex + 1;
+  for (let i = dataStartRow; i < rows.length; i++) {
+    const row = rows[i];
+
+    if (row.every((cell) => cell === "")) continue;
+
+    data.push({
+      noPesanan: getCell(row, noPesananIdx),
+      noPengajuan: getCell(row, noPengajuanIdx),
+      waktuPesananDibuat: getCell(row, waktuDibuatIdx),
+      metodePembayaran: getCell(row, metodeBayarIdx),
+      tanggalDanaDilepaskan: getCell(row, tanggalDanaIdx),
+      hargaAsliProduk: parseNum(getCell(row, hargaAsliIdx)),
+      totalDiskonProduk: parseNum(getCell(row, diskonIdx)),
+      refundBuyer: parseNum(getCell(row, refundIdx)),
+      ongkirDibayarPembeli: parseNum(getCell(row, ongkirPembeliIdx)),
+      gratisOngkirShopee: parseNum(getCell(row, gratisOngkirIdx)),
+      ongkirDiteruskanKeJasaKirim: parseNum(getCell(row, ongkirDiteruskanIdx)),
+      ongkirPengembalian: parseNum(getCell(row, ongkirPengembalianIdx)),
+      biayaKomisiAms: parseNum(getCell(row, komisiAmsIdx)),
+      biayaAdministrasi: parseNum(getCell(row, administrasiIdx)),
+      biayaLayanan: parseNum(getCell(row, layananIdx)),
+      biayaProsesPesanan: parseNum(getCell(row, prosesPesananIdx)),
+      incomeAktual: parseNum(getCell(row, incomeAktualIdx)),
+    });
+  }
+
+  return {
+    data,
+    errors,
+    warnings,
     metadata: {
-     fileName,
-     fileType: "INCOME",
-     sheetName: "Income",
-     totalRows: 0,
-     parsedRows: 0,
-     skippedRows: 0,
-     headers: [],
+      fileName,
+      fileType: "INCOME",
+      sheetName: "Income",
+      totalRows: rows.length - dataStartRow,
+      parsedRows: data.length,
+      skippedRows: rows.length - dataStartRow - data.length,
+      headers,
     },
-   };
-  }
-  headerRowIndex = 5;
- }
-
- const headers = rows[headerRowIndex];
- const colMap = buildColumnMap(headers);
- const data: IncomeRow[] = [];
-
- let missingHeaders = checkMissingHeaders(colMap, INCOME_REQUIRED_COLUMNS);
- /* Relaxed matching fallback */
- if (missingHeaders.length > 0) {
-  const relaxedMissing = missingHeaders.filter((name) => {
-   const relaxed = name.replace(/[^a-z0-9]/g, "").trim();
-   return !Object.values(colMap).some((h) => String(h).replace(/[^a-z0-9]/g, "").trim().includes(relaxed));
-  });
-  if (relaxedMissing.length === 0) {
-   missingHeaders = [];
-  }
- }
-
- if (missingHeaders.length > 0) {
-  errors.push({
-   row: headerRowIndex + 1,
-   field: "headers",
-   message: `Kolom wajib tidak ditemukan: ${missingHeaders.join(", ")}. Header terdeteksi: ${headers.slice(0, 10).join(", ")}${headers.length > 10 ? "..." : ""}`,
-  });
- }
-
- const noPesananIdx = resolveColumn(colMap, 1, ["no. pesanan", "no pesanan", "no pesanann", "no.pesanan", "no_pesanan", "nomor pesanan"]);
- const noPengajuanIdx = resolveColumn(colMap, 2, ["no. pengajuan", "no pengajuan"]);
- const waktuDibuatIdx = resolveColumn(colMap, 4, ["waktu pesanan dibuat", "waktu dibuat", "tanggal pesanan"]);
- const metodeBayarIdx = resolveColumn(colMap, 5, ["metode pembayaran pembeli", "metode pembayaran", "payment method"]);
- const tanggalDanaIdx = resolveColumn(colMap, 6, ["tanggal dana dilepaskan", "tanggal dana", "release date"]);
- const hargaAsliIdx = resolveColumn(colMap, 7, ["harga asli produk", "harga asli", "original price"]);
- const diskonIdx = resolveColumn(colMap, 8, ["total diskon produk", "total diskon", "diskon"]);
- const refundIdx = resolveColumn(colMap, 9, ["jumlah pengembalian dana ke pembeli", "refund buyer", "pengembalian dana", "refund"]);
- const ongkirPembeliIdx = resolveColumn(colMap, 15, ["ongkir dibayar pembeli", "ongkos kirim dibayar pembeli", "shipping paid by buyer"]);
- const gratisOngkirIdx = resolveColumn(colMap, 17, ["gratis ongkir dari shopee", "gratis ongkir", "free shipping"]);
- const ongkirDiteruskanIdx = resolveColumn(colMap, 18, ["ongkir yang diteruskan oleh shopee ke jasa kirim", "ongkir diteruskan ke jasa kirim", "shipping fee forwarded"]);
- const ongkirPengembalianIdx = resolveColumn(colMap, 19, ["ongkos kirim pengembalian barang", "ongkir pengembalian", "return shipping"]);
- const komisiAmsIdx = resolveColumn(colMap, 22, ["biaya komisi ams", "komisi ams", "commission"]);
- const administrasiIdx = resolveColumn(colMap, 23, ["biaya administrasi", "administrasi", "admin fee"]);
- const layananIdx = resolveColumn(colMap, 24, ["biaya layanan", "biaya service", "service fee"]);
- const prosesPesananIdx = resolveColumn(colMap, 25, ["biaya proses pesanan", "biaya proses", "order processing fee"]);
- const incomeAktualIdx = resolveColumn(colMap, 30, ["total penghasilan", "total pendapatan", "pendapatan", "income", "pendapatan sebenarnya", "income aktual"]);
-
- const dataStartRow = headerRowIndex + 1;
- for (let i = dataStartRow; i < rows.length; i++) {
-  const row = rows[i];
-
-  if (row.every((cell) => cell === "")) continue;
-
-  data.push({
-   noPesanan: getCell(row, noPesananIdx),
-   noPengajuan: getCell(row, noPengajuanIdx),
-   waktuPesananDibuat: getCell(row, waktuDibuatIdx),
-   metodePembayaran: getCell(row, metodeBayarIdx),
-   tanggalDanaDilepaskan: getCell(row, tanggalDanaIdx),
-   hargaAsliProduk: parseNum(getCell(row, hargaAsliIdx)),
-   totalDiskonProduk: parseNum(getCell(row, diskonIdx)),
-   refundBuyer: parseNum(getCell(row, refundIdx)),
-   ongkirDibayarPembeli: parseNum(getCell(row, ongkirPembeliIdx)),
-   gratisOngkirShopee: parseNum(getCell(row, gratisOngkirIdx)),
-   ongkirDiteruskanKeJasaKirim: parseNum(getCell(row, ongkirDiteruskanIdx)),
-   ongkirPengembalian: parseNum(getCell(row, ongkirPengembalianIdx)),
-   biayaKomisiAms: parseNum(getCell(row, komisiAmsIdx)),
-   biayaAdministrasi: parseNum(getCell(row, administrasiIdx)),
-   biayaLayanan: parseNum(getCell(row, layananIdx)),
-   biayaProsesPesanan: parseNum(getCell(row, prosesPesananIdx)),
-   incomeAktual: parseNum(getCell(row, incomeAktualIdx)),
-  });
- }
-
- return {
-  data,
-  errors,
-  warnings,
-  metadata: {
-   fileName,
-   fileType: "INCOME",
-   sheetName: "Income",
-   totalRows: rows.length - dataStartRow,
-   parsedRows: data.length,
-   skippedRows: rows.length - dataStartRow - data.length,
-   headers,
-  },
- };
+  };
 }
 
 /* ─── Adjustment Parser (PRD 3.5) ─── */
